@@ -1,0 +1,127 @@
+[
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_14",
+    "path": "data/HEK293T/GT_FLD_14.csv"
+  },
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_2",
+    "path": "data/HEK293T/GT_FLD_2.csv"
+  },
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_23",
+    "path": "data/HEK293T/GT_FLD_23.csv"
+  },
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_29",
+    "path": "data/HEK293T/GT_FLD_29.csv"
+  },
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_5",
+    "path": "data/HEK293T/GT_FLD_5.csv"
+  },
+  {
+    "cellTrack": "HEK293T",
+    "sequence": "FLD_8",
+    "path": "data/HEK293T/GT_FLD_8.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_102",
+    "path": "data/MCF10A/GT_FLD_102.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_103",
+    "path": "data/MCF10A/GT_FLD_103.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_104",
+    "path": "data/MCF10A/GT_FLD_104.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_106",
+    "path": "data/MCF10A/GT_FLD_106.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_107",
+    "path": "data/MCF10A/GT_FLD_107.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_108",
+    "path": "data/MCF10A/GT_FLD_108.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_110",
+    "path": "data/MCF10A/GT_FLD_110.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_111",
+    "path": "data/MCF10A/GT_FLD_111.csv"
+  },
+  {
+    "cellTrack": "MCF10A",
+    "sequence": "FLD_113",
+    "path": "data/MCF10A/GT_FLD_113.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_1",
+    "path": "data/MDA-MB-231/GT_FLD_1.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_2",
+    "path": "data/MDA-MB-231/GT_FLD_2.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_3",
+    "path": "data/MDA-MB-231/GT_FLD_3.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_4",
+    "path": "data/MDA-MB-231/GT_FLD_4.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_5",
+    "path": "data/MDA-MB-231/GT_FLD_5.csv"
+  },
+  {
+    "cellTrack": "MDA-MB-231",
+    "sequence": "FLD_6",
+    "path": "data/MDA-MB-231/GT_FLD_6.csv"
+  },
+  {
+    "cellTrack": "U87",
+    "sequence": "FLD_1",
+    "path": "data/U87/GT_FLD_1.csv"
+  },
+  {
+    "cellTrack": "U87",
+    "sequence": "FLD_2",
+    "path": "data/U87/GT_FLD_2.csv"
+  },
+  {
+    "cellTrack": "U87",
+    "sequence": "FLD_3",
+    "path": "data/U87/GT_FLD_3.csv"
+  },
+  {
+    "cellTrack": "U87",
+    "sequence": "FLD_4",
+    "path": "data/U87/GT_FLD_4.csv"
+  }
+]

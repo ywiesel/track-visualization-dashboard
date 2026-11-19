@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Explore cell behavior</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <script defer src="js/script.js"></script>
+  <script defer src="js/visualizations/visualization1.js"></script>
+  <script defer src="js/visualizations/visualization2.js"></script>
+  <script defer src="js/visualizations/visualization3.js"></script>
+</head>
+<body>
+<main>
+  <header class="page-header">
+    <div class="eyebrow">Cell behavior dashboard · ground truth data</div>
+    <h1>Explore cell behavior</h1>
+    <p class="intro">Study cell behavior using ground-truth tracks from Dataset 1. Explore track properties, compare movement across sequences, find unusual tracks, and spot possible experimental issues.</p>
+  </header>
+
+
+  <section class="card shared-filters" aria-label="Shared dashboard filters">
+    <div class="filter-row">
+      <label for="cell-track">Cell track
+        <select id="cell-track" aria-label="Choose a cell track or cell line"></select>
+      </label>
+      <label for="sequence">Sequence
+        <select id="sequence" aria-label="Choose a sequence available for the selected cell track"></select>
+      </label>
+    </div>
+  </section>
+  <p id="dashboard-error" class="load-error" role="alert" hidden></p>
+
+  <div class="visual-grid">
+    <section class="card visual-card" aria-labelledby="visualization1-title">
+      <h2 id="visualization1-title">Visual 1</h2>
+      <div id="visualization1" class="visual-content"></div>
+    </section>
+    <section class="card visual-card" aria-labelledby="visualization2-title">
+      <h2 id="visualization2-title">Visual 2</h2>
+      <div id="visualization2" class="visual-content"></div>
+    </section>
+  </div>
+
+  <section class="card visual-card" aria-labelledby="visualization3-title">
+    <div class="visual-heading">
+      <h2 id="visualization3-title">Visual 3 · Distinct tracks by horizontal position</h2>
+      <div class="summary" id="summary" aria-live="polite"></div>
+    </div>
+    <svg id="visualization3" role="img" aria-labelledby="visualization3-title chart-description"></svg>
+    <p class="chart-note" id="chart-description">Each track is counted once in every position range it visits. Hover over or focus a bar for its exact position range, distinct-track count, and observation count.</p>
+    <div id="bar-tooltip" class="bar-tooltip" role="status" aria-live="polite">Hover over or tab to a bar to see its data.</div>
+  </section>
+
+  <footer>Source: Dataset 1 ground-truth CSV files.</footer>
+</main>
+</body>
+</html>
