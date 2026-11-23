@@ -35,3 +35,6 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 footer{font-size:11px;color:var(--muted);margin:15px 2px 0}
 @media(max-width:760px){.visual-grid{grid-template-columns:1fr}}
 @media(max-width:600px){main{padding:22px 12px}.card,.use-case{padding:15px 12px}.use-case ul{grid-template-columns:1fr}.filter-row label{width:100%}.summary{gap:12px}}
+.heatmap-controls{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 12px;color:var(--muted);font-size:12px}
+.heatmap-controls label{display:grid;gap:4px}
+.heatmap-controls input[type="range"] {width: 180px;accent-color: var(--accent);}
