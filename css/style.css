@@ -11,9 +11,16 @@ h1{font-size:clamp(27px,4vw,38px);line-height:1.12;letter-spacing:-.03em;margin:
 .use-case{padding:17px 20px}
 .use-case h2{font-size:15px;margin:0 0 8px}
 .use-case ul{margin:0;padding-left:20px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 24px;color:#344255;font-size:13px}
-.filter-row{display:flex;align-items:end;gap:14px;flex-wrap:wrap}
-.filter-row label{font-size:12px;font-weight:700;color:var(--muted);display:grid;gap:4px;min-width:210px}
-select{width:100%;height:39px;padding:0 34px 0 11px;border:1px solid #c7d1dc;border-radius:7px;background:white;color:var(--ink);font:inherit}
+.filter-row{display:flex;align-items:start;gap:14px;flex-wrap:wrap}
+.dataset-filter{display:grid;gap:4px;min-width:210px;font-size:12px;font-weight:700;color:var(--muted)}
+.filter-trigger{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:39px;padding:0 11px;border:1px solid #c7d1dc;border-radius:7px;background:var(--paper);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.filter-trigger::after{content:"";width:7px;height:7px;border-right:2px solid;border-bottom:2px solid;transform:translateY(-2px) rotate(45deg)}
+.filter-trigger[aria-expanded="true"]::after{transform:translateY(2px) rotate(225deg)}
+.filter-options{max-height:270px;overflow:auto;padding:4px;border:1px solid #c7d1dc;border-radius:7px;background:var(--paper)}
+.filter-options p{margin:0;padding:8px}
+.filter-options button{display:block;width:100%;padding:8px;border:0;border-radius:4px;background:var(--paper);color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.filter-options button[aria-current="true"]{background:#eaf3fb}
+.filter-options button:hover,.filter-options button:focus-visible{background:var(--bg)}
 .visual-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:16px}
 .visual-grid .card{margin:0}
 .visual-card h2{font-size:17px;margin:0 0 12px}
@@ -26,15 +33,22 @@ svg{display:block;width:100%;height:auto;overflow:visible}
 .grid line{stroke:#e8edf2}
 .axis path,.axis line{stroke:#aeb9c5}
 .axis text{fill:#5b6878;font-size:11px}
-.bar{fill:var(--accent);fill-opacity:.84;transition:fill-opacity .12s}
-.bar:hover,.bar:focus{fill-opacity:1;stroke:#7a3d0c;stroke-width:1.5;outline:none}
-.bar-tooltip{margin-top:10px;padding:11px 13px;border:1px solid #cbd5df;border-left:4px solid var(--accent);border-radius:8px;background:#f8fbfe;color:var(--ink);font-size:13px;line-height:1.55}
-.bar-tooltip strong{display:block;margin-bottom:3px;font-size:14px}
+.duration-axis-label{fill:var(--ink);font-size:12px}
+.axis .duration-active-label{fill:var(--ink);font-weight:750}
+.duration-violin{fill-opacity:.67;stroke:#465363;stroke-width:1}
+.duration-violin.is-active{fill-opacity:.88;stroke:var(--ink);stroke-width:1.7}
+.duration-dot{fill:#142235;fill-opacity:.52;cursor:pointer}
+.duration-dot:hover,.duration-dot.is-selected{fill:#142235;fill-opacity:1;stroke:white;stroke-width:1.5;r:4px}
+.duration-details{color:var(--muted);font-size:13px}
+.duration-details:not(:empty){margin-top:8px}
 .chart-note{font-size:13px;color:var(--muted);margin:8px 0 0}
 .load-error{padding:22px;color:#9a2633;background:#fff1f2;border-radius:8px}
 footer{font-size:11px;color:var(--muted);margin:15px 2px 0}
 @media(max-width:760px){.visual-grid{grid-template-columns:1fr}}
-@media(max-width:600px){main{padding:22px 12px}.card,.use-case{padding:15px 12px}.use-case ul{grid-template-columns:1fr}.filter-row label{width:100%}.summary{gap:12px}}
+@media(max-width:600px){main{padding:22px 12px}.card,.use-case{padding:15px 12px}.use-case ul{grid-template-columns:1fr}.dataset-filter{width:100%}.summary{gap:12px}}
 .heatmap-controls{display:flex;gap:16px;flex-wrap:wrap;margin:4px 0 12px;color:var(--muted);font-size:12px}
 .heatmap-controls label{display:grid;gap:4px}
 .heatmap-controls input[type="range"] {width: 180px;accent-color: var(--accent);}
+.axis .heatmap-sequence-active{fill:var(--ink);font-weight:750}
+.heatmap-sequence-outline{fill:none;stroke:var(--ink);stroke-width:1.5;visibility:hidden;pointer-events:none}
+.heatmap-sequence-outline.heatmap-sequence-active{visibility:visible}

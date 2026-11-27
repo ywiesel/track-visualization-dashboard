@@ -1,177 +1,189 @@
 (() => {
-  const BAR_COUNT = 40;
-  const MARGINS = {top:22, right:18, bottom:62, left:62};
   const svg = d3.select("#visualization3");
-  const tooltip = d3.select("#bar-tooltip");
-  const summary = document.querySelector("#summary");
-  const visualization = document.querySelector("#visualization3");
+  const summary = document.querySelector("#duration-summary");
+  const details = document.querySelector("#duration-details");
+  const colors = ["#ef6b62", "#59b86e", "#548ee5", "#d9a54a", "#9d79d0",
+    "#47adb7", "#da77a5", "#819c55", "#a88471"];
+  const cache = new Map();
 
-  let latestRequest = 0;
-  let currentData = null;
-  let currentSelection = null;
+  let manifest;
+  let groups = [];
+  let selection;
+  let selectedTrack = null;
+  let requestId = 0;
 
-  function parsePositionRows(rows) {
-    return rows
-      .map(row => ({trackId:row.track_id, position:Number(row.position_x_t)}))
-      .filter(row => row.trackId !== undefined && row.trackId !== "" && Number.isFinite(row.position));
+  function getTracks(rows) {
+    const tracks = new Map();
+    for (const row of rows) {
+      const id = row.track_id?.trim();
+      const frameText = row.frame_t?.trim();
+      const frame = Number(frameText);
+      if (!id || !frameText || !Number.isInteger(frame) || frame < 0) continue;
+
+      const track = tracks.get(id) ?? {id, start:frame, end:frame};
+      track.start = Math.min(track.start, frame);
+      track.end = Math.max(track.end, frame);
+      tracks.set(id, track);
+    }
+    return Array.from(tracks.values(), track => ({
+      ...track, duration:track.end - track.start + 1
+    })).sort((a, b) => a.duration - b.duration || d3.ascending(a.id, b.id));
   }
 
-  function makePositionBins(data) {
-    const [observedMin, observedMax] = d3.extent(data, row => row.position);
-    const min = observedMin === observedMax ? observedMin - 0.5 : observedMin;
-    const max = observedMin === observedMax ? observedMax + 0.5 : observedMax;
-    const binWidth = (max - min) / BAR_COUNT;
-    const bins = d3.range(BAR_COUNT).map(index => ({
-      x0:min + index * binWidth,
-      x1:min + (index + 1) * binWidth,
-      trackIds:new Set(),
-      observationCount:0
-    }));
+  function loadTracks(path) {
+    if (!cache.has(path)) {
+      cache.set(path, d3.csv(path).then(getTracks).catch(error => {
+        cache.delete(path);
+        throw error;
+      }));
+    }
+    return cache.get(path);
+  }
 
-    for (const row of data) {
-      const index = Math.max(0, Math.min(BAR_COUNT - 1, Math.floor((row.position - min) / binWidth)));
-      bins[index].trackIds.add(row.trackId);
-      bins[index].observationCount += 1;
+  function showTrack(track) {
+    details.textContent = track
+      ? `${track.sequence} · Track ${track.id} · ${track.duration} ${track.duration === 1 ? "frame" : "frames"} · Start ${track.start} · End ${track.end}`
+      : "";
+  }
+
+  function updateSummary() {
+    const tracks = groups.find(group => group.sequence === selection.sequence)?.tracks ?? [];
+    summary.textContent = tracks.length
+      ? `${selection.sequence} · ${tracks.length.toLocaleString()} tracks · ${tracks[0].duration}–${tracks.at(-1).duration} frames`
+      : `${selection.sequence} · No tracks with valid frames`;
+  }
+
+  function showSelectedTrack() {
+    showTrack(selectedTrack);
+    svg.selectAll(".duration-dot")
+      .classed("is-selected", dot => dot.sequence === selectedTrack?.sequence && dot.id === selectedTrack?.id);
+  }
+
+  function densityAt(tracks, duration, bandwidth) {
+    return d3.mean(tracks, track => {
+      const distance = (duration - track.duration) / bandwidth;
+      return Math.exp(-0.5 * distance ** 2);
+    }) ?? 0;
+  }
+
+  function render() {
+    if (!groups.length) return;
+    svg.selectAll("*").remove();
+    const width = Math.max(240, svg.node().parentElement.clientWidth - 46);
+    const height = 365;
+    const left = 56;
+    const right = width - 12;
+    const bottom = height - 76;
+    const top = 18;
+    const maximum = d3.max(groups, group => group.tracks.at(-1)?.duration);
+    const y = d3.scaleLinear().domain([0, Math.max(2, maximum ?? 1)]).nice()
+      .range([bottom, top]);
+    const x = d3.scaleBand().domain(groups.map(group => group.sequence))
+      .range([left, right]).padding(0.22);
+    const bandwidth = Math.max(1, (maximum ?? 1) * 0.035);
+    const ticks = y.ticks(6).filter(Number.isInteger);
+
+    svg.attr("viewBox", `0 0 ${width} ${height}`);
+    svg.append("g").attr("class", "grid").attr("transform", `translate(${left},0)`)
+      .call(d3.axisLeft(y).tickValues(ticks).tickSize(left - right).tickFormat(() => ""))
+      .call(axis => axis.select(".domain").remove());
+    svg.append("g").attr("class", "axis").attr("transform", `translate(${left},0)`)
+      .call(d3.axisLeft(y).tickValues(ticks).tickFormat(d3.format("d")));
+    svg.append("g").attr("class", "axis").attr("transform", `translate(0,${bottom})`)
+      .call(d3.axisBottom(x).tickSizeOuter(0))
+      .call(axis => axis.selectAll(".tick text")
+        .classed("duration-active-label", sequence => sequence === selection.sequence)
+        .attr("transform", width < 600 ? "rotate(-45)" : null)
+        .attr("text-anchor", width < 600 ? "end" : "middle"));
+    svg.append("text").attr("class", "duration-axis-label")
+      .attr("x", (left + right) / 2).attr("y", height - 5).attr("text-anchor", "middle")
+      .text("Video sequence");
+    svg.append("text").attr("class", "duration-axis-label")
+      .attr("transform", `translate(14,${(top + bottom) / 2}) rotate(-90)`)
+      .attr("text-anchor", "middle").text("Track duration (frames)");
+
+    groups.forEach(({sequence, tracks}, index) => {
+      const center = x(sequence) + x.bandwidth() / 2;
+      if (!tracks.length) {
+        svg.append("text").attr("class", "duration-axis-label")
+          .attr("x", center).attr("y", bottom - 8).attr("text-anchor", "middle").text("0");
+        return;
+      }
+
+      const min = Math.max(0, tracks[0].duration - 3 * bandwidth);
+      const max = Math.min(y.domain()[1], tracks.at(-1).duration + 3 * bandwidth);
+      const density = d3.range(81).map(step => {
+        const duration = min + (max - min) * step / 80;
+        return {duration, density:densityAt(tracks, duration, bandwidth)};
+      });
+      const peak = d3.max(density, point => point.density);
+      const halfWidth = Math.min(x.bandwidth() / 2, 44);
+      const violin = d3.area()
+        .x0(point => center - point.density / peak * halfWidth)
+        .x1(point => center + point.density / peak * halfWidth)
+        .y(point => y(point.duration)).curve(d3.curveMonotoneY);
+
+      svg.append("path").datum(density).attr("d", violin)
+        .attr("class", "duration-violin")
+        .classed("is-active", sequence === selection.sequence)
+        .attr("fill", colors[index % colors.length]);
+
+      const dots = tracks.map((track, trackIndex) => {
+        const jitter = ((trackIndex * 0.61803398875) % 1) * 2 - 1;
+        const spread = 0.87 * halfWidth * Math.min(1, densityAt(tracks, track.duration, bandwidth) / peak);
+        return {...track, sequence, x:center + jitter * spread};
+      });
+      svg.append("g").selectAll("circle").data(dots).join("circle")
+        .attr("class", "duration-dot")
+        .attr("cx", dot => dot.x).attr("cy", dot => y(dot.duration))
+        .attr("r", width < 480 ? 1.7 : 2.2)
+        .on("pointerenter", (_event, dot) => showTrack(dot))
+        .on("pointerleave", () => showTrack(selectedTrack))
+        .on("click", (_event, dot) => {
+          window.selectDashboardSequence(sequence);
+          selectedTrack = dot;
+          showSelectedTrack();
+        });
+    });
+
+    showSelectedTrack();
+  }
+
+  async function loadSelection(nextSelection) {
+    const previous = selection;
+    selection = nextSelection;
+    if (previous?.path !== selection.path) selectedTrack = null;
+    const currentRequest = ++requestId;
+    if (previous?.cellTrack === selection.cellTrack && groups.length) {
+      updateSummary();
+      render();
+      return;
     }
 
-    return {bins, min, max};
-  }
-
-  function showBarDetails(bin, totalTrackCount) {
-    const trackCount = bin.trackIds.size;
-    const trackShare = totalTrackCount ? (trackCount / totalTrackCount * 100).toFixed(1) : "0.0";
-
-    tooltip.html([
-      `<strong>${bin.x0.toFixed(1)}–${bin.x1.toFixed(1)} px</strong>`,
-      `<div>Distinct tracks: ${trackCount.toLocaleString()}</div>`,
-      `<div>Position observations: ${bin.observationCount.toLocaleString()}</div>`,
-      `<div>Share of tracks in sequence: ${trackShare}%</div>`
-    ].join(""));
-  }
-
-  function renderSummary(data, min, max) {
-    const trackIds = new Set(data.map(row => row.trackId));
-    summary.innerHTML = [
-      `<span><strong>${trackIds.size.toLocaleString()}</strong> distinct tracks</span>`,
-      `<span><strong>${data.length.toLocaleString()}</strong> observations</span>`,
-      `<span><strong>${min.toFixed(0)}–${max.toFixed(0)}</strong> px observed</span>`
-    ].join("");
-  }
-
-  function renderAxes(plot, xScale, yScale, width, height) {
-    const plotWidth = width - MARGINS.left - MARGINS.right;
-
-    plot.append("g")
-      .attr("class", "grid")
-      .attr("transform", `translate(${MARGINS.left},0)`)
-      .call(d3.axisLeft(yScale).ticks(4).tickSize(-plotWidth).tickFormat(""));
-
-    plot.append("g")
-      .attr("class", "axis")
-      .attr("transform", `translate(0,${height - MARGINS.bottom})`)
-      .call(d3.axisBottom(xScale).ticks(6).tickFormat(d3.format(".0f")));
-
-    plot.append("g")
-      .attr("class", "axis")
-      .attr("transform", `translate(${MARGINS.left},0)`)
-      .call(d3.axisLeft(yScale).ticks(4).tickFormat(d3.format("d")));
-
-    plot.append("text")
-      .attr("x", (MARGINS.left + width - MARGINS.right) / 2)
-      .attr("y", height - 13)
-      .attr("text-anchor", "middle")
-      .attr("class", "axis-label")
-      .text("Horizontal cell position (pixels)");
-
-    plot.append("text")
-      .attr("transform", `translate(17,${(MARGINS.top + height - MARGINS.bottom) / 2}) rotate(-90)`)
-      .attr("text-anchor", "middle")
-      .attr("class", "axis-label")
-      .text("Distinct tracks");
-  }
-
-  function renderBars(plot, bins, xScale, yScale, totalTrackCount) {
-    plot.selectAll("rect.bar")
-      .data(bins)
-      .join("rect")
-      .attr("class", "bar")
-      .attr("x", bin => xScale(bin.x0) + 1)
-      .attr("y", bin => yScale(bin.trackIds.size))
-      .attr("width", bin => Math.max(1, xScale(bin.x1) - xScale(bin.x0) - 2))
-      .attr("height", bin => yScale(0) - yScale(bin.trackIds.size))
-      .attr("tabindex", 0)
-      .attr("role", "img")
-      .attr("aria-describedby", "bar-tooltip")
-      .attr("aria-label", bin =>
-        `${bin.trackIds.size} distinct tracks and ${bin.observationCount} observations ` +
-        `between ${bin.x0.toFixed(1)} and ${bin.x1.toFixed(1)} pixels`)
-      .on("mouseover", (_event, bin) => showBarDetails(bin, totalTrackCount))
-      .on("focus", (_event, bin) => showBarDetails(bin, totalTrackCount))
-      .append("title")
-      .text(bin =>
-        `${bin.x0.toFixed(1)}–${bin.x1.toFixed(1)} px · ` +
-        `${bin.trackIds.size} distinct tracks · ${bin.observationCount} position observations`);
-  }
-
-  function renderVisualization(data, selection) {
-    const {bins, min, max} = makePositionBins(data);
-    const totalTrackCount = new Set(data.map(row => row.trackId)).size;
-    const width = Math.max(320, visualization.parentElement.clientWidth - 4);
-    const height = width < 560 ? 330 : 410;
-    const xScale = d3.scaleLinear()
-      .domain([min, max])
-      .range([MARGINS.left, width - MARGINS.right]);
-    const yScale = d3.scaleLinear()
-      .domain([0, d3.max(bins, bin => bin.trackIds.size) || 1])
-      .nice(4)
-      .range([height - MARGINS.bottom, MARGINS.top]);
-
+    groups = [];
     svg.selectAll("*").remove();
-    svg.attr("viewBox", `0 0 ${width} ${height}`).attr("height", height);
-    const plot = svg.append("g");
-
-    renderAxes(plot, xScale, yScale, width, height);
-    renderBars(plot, bins, xScale, yScale, totalTrackCount);
-    renderSummary(data, min, max);
-    tooltip.text(`Showing ${selection.cellTrack} · ${selection.sequence}. Hover over or focus a bar for details.`);
-  }
-
-  function showLoadError(message) {
-    svg.selectAll("*").remove();
-    svg.attr("viewBox", "0 0 800 90").attr("height", 90);
-    svg.append("text")
-      .attr("x", "50%")
-      .attr("y", 50)
-      .attr("text-anchor", "middle")
-      .attr("fill", "#9a2633")
-      .text("Could not load the selected dataset. Check the CSV path and run the site from a local server.");
-    summary.textContent = message;
-    tooltip.text("Bar details are unavailable until the dataset loads.");
-  }
-
-  async function loadSelection(selection) {
-    if (!selection?.path) return;
-    const requestId = ++latestRequest;
+    showTrack(selectedTrack);
+    summary.textContent = `Loading ${selection.cellTrack} tracks…`;
 
     try {
-      const rows = await d3.csv(selection.path);
-      if (requestId !== latestRequest) return;
-
-      const data = parsePositionRows(rows);
-      if (data.length === 0) throw new Error("The selected CSV contains no valid horizontal positions.");
-
-      currentData = data;
-      currentSelection = selection;
-      renderVisualization(currentData, currentSelection);
+      manifest ??= await d3.json("data/datasets.json");
+      const datasets = manifest.filter(dataset => dataset.cellTrack === nextSelection.cellTrack)
+        .sort((a, b) => a.sequence.localeCompare(b.sequence, undefined, {numeric:true}));
+      const loadedGroups = await Promise.all(datasets.map(async dataset => ({
+        sequence:dataset.sequence, tracks:await loadTracks(dataset.path)
+      })));
+      if (currentRequest !== requestId) return;
+      groups = loadedGroups;
+      updateSummary();
+      render();
     } catch (error) {
-      if (requestId === latestRequest) showLoadError(error.message);
+      if (currentRequest !== requestId) return;
+      summary.textContent = "Could not load track durations.";
+      details.textContent = error.message;
     }
   }
 
   window.addEventListener("dashboardselectionchange", event => loadSelection(event.detail));
-  window.addEventListener("resize", () => {
-    if (currentData && currentSelection) renderVisualization(currentData, currentSelection);
-  });
-
+  window.addEventListener("resize", render);
   if (window.dashboardSelection) loadSelection(window.dashboardSelection);
 })();

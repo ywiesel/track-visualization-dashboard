@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Explore cell behavior</title>
-  <link rel="stylesheet" href="css/style.css">
-  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
-  <script defer src="js/script.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=inline-filters">
+  <script defer src="js/script.js?v=inline-filters"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <script defer src="js/visualizations/visualization1.js"></script>
   <script defer src="js/visualizations/visualization2.js"></script>
   <script defer src="js/visualizations/visualization3.js"></script>
@@ -22,15 +22,28 @@
 
   <section class="card shared-filters" aria-label="Shared dashboard filters">
     <div class="filter-row">
-      <label for="cell-track">Cell track
-        <select id="cell-track" aria-label="Choose a cell track or cell line"></select>
-      </label>
-      <label for="sequence">Sequence
-        <select id="sequence" aria-label="Choose a sequence available for the selected cell track"></select>
-      </label>
+      <div class="dataset-filter" id="cell-track">
+        <span id="cell-track-label">Cell track</span>
+        <button type="button" class="filter-trigger" aria-expanded="false" aria-controls="cell-track-options" aria-labelledby="cell-track-label cell-track-value">
+          <span id="cell-track-value">Loading…</span>
+        </button>
+        <div class="filter-options" id="cell-track-options" role="group" aria-labelledby="cell-track-label" hidden>
+          <p>Loading cell tracks…</p>
+        </div>
+      </div>
+      <div class="dataset-filter" id="sequence">
+        <span id="sequence-label">Sequence</span>
+        <button type="button" class="filter-trigger" aria-expanded="false" aria-controls="sequence-options" aria-labelledby="sequence-label sequence-value">
+          <span id="sequence-value">Loading…</span>
+        </button>
+        <div class="filter-options" id="sequence-options" role="group" aria-labelledby="sequence-label" hidden>
+          <p>Loading sequences…</p>
+        </div>
+      </div>
     </div>
+    <p id="dashboard-error" class="load-error" role="alert" hidden></p>
+    <noscript><p class="load-error">Enable JavaScript to use the dashboard filters.</p></noscript>
   </section>
-  <p id="dashboard-error" class="load-error" role="alert" hidden></p>
 
   <div class="visual-grid">
     <section class="card visual-card" aria-labelledby="visualization1-title">
@@ -45,12 +58,12 @@
 
   <section class="card visual-card" aria-labelledby="visualization3-title">
     <div class="visual-heading">
-      <h2 id="visualization3-title">Visual 3 · Distinct tracks by horizontal position</h2>
-      <div class="summary" id="summary" aria-live="polite"></div>
+      <h2 id="visualization3-title">Visual 3 · Track duration by sequence</h2>
+      <div class="summary" id="duration-summary" role="status"></div>
     </div>
-    <svg id="visualization3" role="img" aria-labelledby="visualization3-title chart-description"></svg>
-    <p class="chart-note" id="chart-description">Each track is counted once in every position range it visits. Hover over or focus a bar for its exact position range, distinct-track count, and observation count.</p>
-    <div id="bar-tooltip" class="bar-tooltip" role="status" aria-live="polite">Hover over or tab to a bar to see its data.</div>
+    <svg id="visualization3" role="img" aria-labelledby="visualization3-title" aria-describedby="chart-description"></svg>
+    <p class="chart-note" id="chart-description">Each dot is one track. Wider sections show where durations are more common within a sequence. Duration is the span from the first to last recorded frame, including both. Hover over or click a dot for its details.</p>
+    <div id="duration-details" class="duration-details" role="status"></div>
   </section>
 
   <footer>Source: Dataset 1 ground-truth CSV files.</footer>

@@ -1,7 +1,5 @@
 (() => {
   const container = d3.select("#visualization2");
-  const cellTrackSelect = document.querySelector("#cell-track");
-  const sequenceSelect = document.querySelector("#sequence"); 
 
   let datasets = [];
   let manifestLoaded = false;
@@ -13,11 +11,10 @@
     container.text(message);
   }
 
-  function selectSequence(sequence) {
-    sequenceSelect.value = sequence;
-    sequenceSelect.dispatchEvent(
-      new Event("change", {bubbles: true})
-    );
+  function highlightSequence() {
+    const selectedSequence = window.dashboardSelection?.sequence;
+    container.selectAll(".heatmap-sequence-label, .heatmap-sequence-outline")
+      .classed("heatmap-sequence-active", sequence => sequence === selectedSequence);
   }
 
   function renderHeatMap(averages, selectedDatasets) {
@@ -129,8 +126,9 @@
       .call(d3.axisLeft(y));
 
     yAxis.selectAll(".tick text")
+      .classed("heatmap-sequence-label", true)
       .style("cursor", "pointer")
-      .on("click", (_event, sequence) => selectSequence(sequence));
+      .on("click", (_event, sequence) => window.selectDashboardSequence(sequence));
 
     for (const sequence of sequences) {
       for (const frameRangeStart of visibleFrameRanges) {
@@ -143,7 +141,7 @@
           .attr("height", y.bandwidth())
           .attr("fill", value ? color(value.averageDisplacement) : "#f1f4f7")
           .style("cursor", "pointer")
-          .on("click", () => selectSequence(sequence))
+          .on("click", () => window.selectDashboardSequence(sequence))
           .append("title")
           .text(value
             ? `${sequence}, frames ${frameRangeStart}–${frameRangeStart + 49}: ` +
@@ -151,6 +149,16 @@
             : `${sequence}, frames ${frameRangeStart}–${frameRangeStart + 49}: no observations`);
       }
     }
+
+    svg.selectAll(".heatmap-sequence-outline")
+      .data(sequences)
+      .join("rect")
+      .attr("class", "heatmap-sequence-outline")
+      .attr("x", margin.left - 1)
+      .attr("y", sequence => y(sequence) - 1)
+      .attr("width", width - margin.left - margin.right + 2)
+      .attr("height", y.bandwidth() + 2);
+    highlightSequence();
 
     container.append("p")
       .attr("class", "chart-note")
@@ -160,10 +168,9 @@
   async function loadCellTrack(cellTrack) {
     const requestId = ++latestRequest;
 
-    if (currentCellTrack !== cellTrack) {
-      currentCellTrack = cellTrack;
-      currentFrameFilter = null;
-    }
+    currentCellTrack = cellTrack;
+    currentFrameFilter = null;
+    showMessage(`Loading ${cellTrack} sequences…`);
 
     const selectedDatasets = datasets.filter(
       dataset => dataset.cellTrack === cellTrack
@@ -225,12 +232,17 @@
 
       renderHeatMap(averages, selectedDatasets);
     } catch (error) {
+      if (requestId !== latestRequest) return;
+      currentCellTrack = null;
       showMessage(`Could not load the CSV data: ${error.message}`);
     }
   }
 
   window.addEventListener("dashboardselectionchange", event => {
-    if (manifestLoaded) {
+    if (!manifestLoaded) return;
+    if (event.detail.cellTrack === currentCellTrack) {
+      highlightSequence();
+    } else {
       loadCellTrack(event.detail.cellTrack);
     }
   });
@@ -245,8 +257,7 @@
       datasets = await response.json();
       manifestLoaded = true;
 
-      const cellTrack =
-        window.dashboardSelection?.cellTrack ?? cellTrackSelect.value;
+      const cellTrack = window.dashboardSelection?.cellTrack;
 
       if (cellTrack) {
         loadCellTrack(cellTrack);
