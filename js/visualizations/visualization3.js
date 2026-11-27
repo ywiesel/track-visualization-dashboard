@@ -84,6 +84,13 @@
     const ticks = y.ticks(6).filter(Number.isInteger);
 
     svg.attr("viewBox", `0 0 ${width} ${height}`);
+    const bandPadding = x.step() * 0.07;
+    svg.append("rect").attr("class", "duration-active-band")
+      .attr("x", x(selection.sequence) - bandPadding)
+      .attr("y", top - 6)
+      .attr("width", x.bandwidth() + 2 * bandPadding)
+      .attr("height", bottom - top + 6)
+      .attr("rx", 6);
     svg.append("g").attr("class", "grid").attr("transform", `translate(${left},0)`)
       .call(d3.axisLeft(y).tickValues(ticks).tickSize(left - right).tickFormat(() => ""))
       .call(axis => axis.select(".domain").remove());
@@ -104,8 +111,10 @@
 
     groups.forEach(({sequence, tracks}, index) => {
       const center = x(sequence) + x.bandwidth() / 2;
+      const group = svg.append("g").attr("class", "duration-sequence")
+        .classed("is-active", sequence === selection.sequence);
       if (!tracks.length) {
-        svg.append("text").attr("class", "duration-axis-label")
+        group.append("text").attr("class", "duration-axis-label")
           .attr("x", center).attr("y", bottom - 8).attr("text-anchor", "middle").text("0");
         return;
       }
@@ -123,9 +132,8 @@
         .x1(point => center + point.density / peak * halfWidth)
         .y(point => y(point.duration)).curve(d3.curveMonotoneY);
 
-      svg.append("path").datum(density).attr("d", violin)
+      group.append("path").datum(density).attr("d", violin)
         .attr("class", "duration-violin")
-        .classed("is-active", sequence === selection.sequence)
         .attr("fill", colors[index % colors.length]);
 
       const dots = tracks.map((track, trackIndex) => {
@@ -133,7 +141,7 @@
         const spread = 0.87 * halfWidth * Math.min(1, densityAt(tracks, track.duration, bandwidth) / peak);
         return {...track, sequence, x:center + jitter * spread};
       });
-      svg.append("g").selectAll("circle").data(dots).join("circle")
+      group.selectAll("circle").data(dots).join("circle")
         .attr("class", "duration-dot")
         .attr("cx", dot => dot.x).attr("cy", dot => y(dot.duration))
         .attr("r", width < 480 ? 1.7 : 2.2)
